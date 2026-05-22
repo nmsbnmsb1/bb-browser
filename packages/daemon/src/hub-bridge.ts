@@ -688,30 +688,35 @@ export class HubBridge {
       let result: unknown;
 
       // stream.* commands → streamer sidecar (Protocol 2: /command)
+      // Streamer returns {result: {...}} — unwrap to pass the inner result to Hub.
       if (clipName === BROWSER_CLIP_ALIAS && command === "stream.start") {
         await ensureStreamer();
         const cdpUrl = await this.getCurrentTabCdpUrl();
-        result = await streamerCommand("/command", {
+        const resp = await streamerCommand("/command", {
           method: "connect",
           params: { cdpUrl },
-        });
+        }) as any;
+        result = resp?.result ?? resp;
       } else if (clipName === BROWSER_CLIP_ALIAS && command === "stream.answer") {
-        result = await streamerCommand("/command", {
+        const resp = await streamerCommand("/command", {
           method: "answer",
           params: input,
-        });
+        }) as any;
+        result = resp?.result ?? resp;
       } else if (clipName === BROWSER_CLIP_ALIAS && command === "stream.close") {
-        result = await streamerCommand("/command", {
+        const resp = await streamerCommand("/command", {
           method: "stop",
-        });
+        }) as any;
+        result = resp?.result ?? resp;
       } else if (clipName === BROWSER_CLIP_ALIAS && command === "stream.switch") {
         const tabRef = (input as Record<string, unknown>).tab;
         if (!tabRef) throw new Error("Missing tab parameter");
         const cdpUrl = await this.getTabCdpUrl(String(tabRef));
-        result = await streamerCommand("/command", {
+        const resp = await streamerCommand("/command", {
           method: "switch",
           params: { cdpUrl },
-        });
+        }) as any;
+        result = resp?.result ?? resp;
       } else if (clipName === BROWSER_CLIP_ALIAS) {
         // Browser commands — dispatch directly via CDP (no HTTP round-trip!)
         result = await this.executeBrowserCommand(command, input);
